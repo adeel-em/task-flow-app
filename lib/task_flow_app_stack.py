@@ -205,6 +205,19 @@ class TaskFlowAppStack(Stack):
             alarm_description="Alarm when POST /task API is hit more than 5 times in one minute",
         )
 
+        # Creating a CloudWatch metric for POST request payload size
+        payload_size_metric = cloudwatch.Metric(
+            namespace="AWS/ApiGateway",
+            metric_name="RequestPayloadSize",
+            dimensions_map={
+                "ApiName": api.rest_api_name,
+                "Resource": "/task",
+                "Method": "POST",
+            },
+            period=Duration.minutes(1),
+            statistic="Max",
+        )
+
         # Creating a CloudWatch alarm when POST request payload size exceeds 5 MB (5242880 bytes)
         payload_size_alarm = cloudwatch.Alarm(
             self,
