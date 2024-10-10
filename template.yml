@@ -1,0 +1,556 @@
+Resources:
+  TaskFlowUserPool23A41B9E:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_phone_number
+            Priority: 1
+          - Name: verified_email
+            Priority: 2
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: The verification code to your new account is {####}
+      EmailVerificationSubject: Verify your new account
+      SmsVerificationMessage: The verification code to your new account is {####}
+      UserPoolName: TaskFlowUserPool
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: The verification code to your new account is {####}
+        EmailSubject: Verify your new account
+        SmsMessage: The verification code to your new account is {####}
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowUserPool/Resource
+  TaskFlowUserPoolClient39C1C2E6:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows:
+        - implicit
+        - code
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - profile
+        - phone
+        - email
+        - openid
+        - aws.cognito.signin.user.admin
+      CallbackURLs:
+        - https://example.com
+      SupportedIdentityProviders:
+        - COGNITO
+      UserPoolId:
+        Ref: TaskFlowUserPool23A41B9E
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowUserPoolClient/Resource
+  TaskFlowApi96B2DF4E:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: API for Task Management app
+      Name: TaskFlow Service
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Resource
+  TaskFlowApiCloudWatchRole83048C85:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/CloudWatchRole/Resource
+  TaskFlowApiAccount0E471930:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+          - TaskFlowApiCloudWatchRole83048C85
+          - Arn
+    DependsOn:
+      - TaskFlowApi96B2DF4E
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Account
+  TaskFlowApiDeployment42CA80FFb4f190137c0290b7b3492d77d8a8e261:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: API for Task Management app
+      RestApiId:
+        Ref: TaskFlowApi96B2DF4E
+    DependsOn:
+      - TaskFlowApitaskDELETEEEB1E88F
+      - TaskFlowApitaskGET643899A7
+      - TaskFlowApitaskPOST6E6C9E5B
+      - TaskFlowApitaskPUT08DFD4A7
+      - TaskFlowApitask12397FC0
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Deployment/Resource
+  TaskFlowApiDeploymentStageprodF89A11D2:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId:
+        Ref: TaskFlowApiDeployment42CA80FFb4f190137c0290b7b3492d77d8a8e261
+      RestApiId:
+        Ref: TaskFlowApi96B2DF4E
+      StageName: prod
+    DependsOn:
+      - TaskFlowApiAccount0E471930
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/DeploymentStage.prod/Resource
+  TaskFlowApitask12397FC0:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - TaskFlowApi96B2DF4E
+          - RootResourceId
+      PathPart: task
+      RestApiId:
+        Ref: TaskFlowApi96B2DF4E
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/Resource
+  TaskFlowApitaskGETApiPermissionTaskFlowAppStackTaskFlowApi9CF2C401GETtask6DE77419:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetTasksFunction0827F20D
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /
+            - Ref: TaskFlowApiDeploymentStageprodF89A11D2
+            - /GET/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/GET/ApiPermission.TaskFlowAppStackTaskFlowApi9CF2C401.GET..task
+  TaskFlowApitaskGETApiPermissionTestTaskFlowAppStackTaskFlowApi9CF2C401GETtask4AF34EF6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetTasksFunction0827F20D
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /test-invoke-stage/GET/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/GET/ApiPermission.Test.TaskFlowAppStackTaskFlowApi9CF2C401.GET..task
+  TaskFlowApitaskGET643899A7:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - GetTasksFunction0827F20D
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: TaskFlowApitask12397FC0
+      RestApiId:
+        Ref: TaskFlowApi96B2DF4E
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/GET/Resource
+  TaskFlowApitaskPUTApiPermissionTaskFlowAppStackTaskFlowApi9CF2C401PUTtaskA4A3215C:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UpdateTaskFunctionF338E219
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /
+            - Ref: TaskFlowApiDeploymentStageprodF89A11D2
+            - /PUT/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/PUT/ApiPermission.TaskFlowAppStackTaskFlowApi9CF2C401.PUT..task
+  TaskFlowApitaskPUTApiPermissionTestTaskFlowAppStackTaskFlowApi9CF2C401PUTtask5307DE5F:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UpdateTaskFunctionF338E219
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /test-invoke-stage/PUT/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/PUT/ApiPermission.Test.TaskFlowAppStackTaskFlowApi9CF2C401.PUT..task
+  TaskFlowApitaskPUT08DFD4A7:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: PUT
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UpdateTaskFunctionF338E219
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: TaskFlowApitask12397FC0
+      RestApiId:
+        Ref: TaskFlowApi96B2DF4E
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/PUT/Resource
+  TaskFlowApitaskDELETEApiPermissionTaskFlowAppStackTaskFlowApi9CF2C401DELETEtask5916143C:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - DeleteTaskFunctionC86CB991
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /
+            - Ref: TaskFlowApiDeploymentStageprodF89A11D2
+            - /DELETE/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/DELETE/ApiPermission.TaskFlowAppStackTaskFlowApi9CF2C401.DELETE..task
+  TaskFlowApitaskDELETEApiPermissionTestTaskFlowAppStackTaskFlowApi9CF2C401DELETEtaskBB03DBD2:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - DeleteTaskFunctionC86CB991
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /test-invoke-stage/DELETE/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/DELETE/ApiPermission.Test.TaskFlowAppStackTaskFlowApi9CF2C401.DELETE..task
+  TaskFlowApitaskDELETEEEB1E88F:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - DeleteTaskFunctionC86CB991
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: TaskFlowApitask12397FC0
+      RestApiId:
+        Ref: TaskFlowApi96B2DF4E
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/DELETE/Resource
+  TaskFlowApitaskPOSTApiPermissionTaskFlowAppStackTaskFlowApi9CF2C401POSTtask5798BA32:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - CreateTaskFunctionDCD05326
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /
+            - Ref: TaskFlowApiDeploymentStageprodF89A11D2
+            - /POST/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/POST/ApiPermission.TaskFlowAppStackTaskFlowApi9CF2C401.POST..task
+  TaskFlowApitaskPOSTApiPermissionTestTaskFlowAppStackTaskFlowApi9CF2C401POSTtaskC18AA3BC:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - CreateTaskFunctionDCD05326
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:727646509785:"
+            - Ref: TaskFlowApi96B2DF4E
+            - /test-invoke-stage/POST/task
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/POST/ApiPermission.Test.TaskFlowAppStackTaskFlowApi9CF2C401.POST..task
+  TaskFlowApitaskPOST6E6C9E5B:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - CreateTaskFunctionDCD05326
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: TaskFlowApitask12397FC0
+      RestApiId:
+        Ref: TaskFlowApi96B2DF4E
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/TaskFlowApi/Default/task/POST/Resource
+  CreateTaskFunctionServiceRole819710B4:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/CreateTaskFunction/ServiceRole/Resource
+  CreateTaskFunctionDCD05326:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-727646509785-us-east-1
+        S3Key: 3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f.zip
+      Handler: create_task.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - CreateTaskFunctionServiceRole819710B4
+          - Arn
+      Runtime: python3.12
+    DependsOn:
+      - CreateTaskFunctionServiceRole819710B4
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/CreateTaskFunction/Resource
+      aws:asset:path: asset.3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  GetTasksFunctionServiceRole47AF549A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/GetTasksFunction/ServiceRole/Resource
+  GetTasksFunction0827F20D:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-727646509785-us-east-1
+        S3Key: 3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f.zip
+      Handler: get_tasks.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - GetTasksFunctionServiceRole47AF549A
+          - Arn
+      Runtime: python3.12
+    DependsOn:
+      - GetTasksFunctionServiceRole47AF549A
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/GetTasksFunction/Resource
+      aws:asset:path: asset.3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  UpdateTaskFunctionServiceRole73D32298:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/UpdateTaskFunction/ServiceRole/Resource
+  UpdateTaskFunctionF338E219:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-727646509785-us-east-1
+        S3Key: 3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f.zip
+      Handler: update_task.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - UpdateTaskFunctionServiceRole73D32298
+          - Arn
+      Runtime: python3.12
+    DependsOn:
+      - UpdateTaskFunctionServiceRole73D32298
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/UpdateTaskFunction/Resource
+      aws:asset:path: asset.3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  DeleteTaskFunctionServiceRole85BE28FD:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/DeleteTaskFunction/ServiceRole/Resource
+  DeleteTaskFunctionC86CB991:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-727646509785-us-east-1
+        S3Key: 3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f.zip
+      Handler: delete_task.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - DeleteTaskFunctionServiceRole85BE28FD
+          - Arn
+      Runtime: python3.12
+    DependsOn:
+      - DeleteTaskFunctionServiceRole85BE28FD
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/DeleteTaskFunction/Resource
+      aws:asset:path: asset.3044d2a26e2268d2ff3e4670d0b7d0fcb928084dd853d7917167513fdb8d1a4f
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/1WPy07DMBBFv6V7x7SpxD4tYoeIilhXrjOEIX5EGVtVFPnfGeMWwuqeuZ7HdS13j1u53agrVbobKoMXubwFpQfB1nnRvncYvFzeCabWeyOOH+6X73A0CC6sn4qThBqxVwGuapbLCSg0I+a2FTZa+8jDTzAaP9vbnlXFaXrIXgEe9XHScFD0V9x2Fn6B8Om7bBVKApXl896UPtYkjLKXTsmFjRYmi0TonXiOTocMbN85CdqfFREEkk0WruUh6gFCzpD+hXiNYYxB/PTlvOj6dbYk2pkjuYe93NWy3nwRYjXx99GCPBX9BorCN/iTAQAA
+    Metadata:
+      aws:cdk:path: TaskFlowAppStack/CDKMetadata/Default
+Outputs:
+  TaskFlowApiEndpoint25C7A5EA:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: TaskFlowApi96B2DF4E
+          - .execute-api.us-east-1.
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: TaskFlowApiDeploymentStageprodF89A11D2
+          - /
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+
