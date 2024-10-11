@@ -12,6 +12,8 @@ from aws_cdk import (
     RemovalPolicy,
     aws_cloudwatch as cloudwatch,
     aws_cloudwatch_actions as cloudwatch_actions,
+    aws_sns as sns,
+    aws_sns_subscriptions as subs,
 )
 from constructs import Construct
 from aws_cdk.aws_lambda_python_alpha import PythonFunction
@@ -24,6 +26,14 @@ class TaskFlowAppStack(Stack):
 
         load_dotenv()
         SES_EMAIL_SENDER = os.getenv("SES_EMAIL_SENDER")
+
+        # Creating SNS Topic
+        alarm_topic = sns.Topic(
+            self, "TaskFlowAlarmTopic", display_name="Task Flow API Alarm Notifications"
+        )
+
+        # Creating a CloudWatch alarm action to send notifications to SNS topic
+        alarm_topic.add_subscription(subs.EmailSubscription(SES_EMAIL_SENDER))
 
         # Creating S3 bucket
         bucket = s3.Bucket(
@@ -180,20 +190,18 @@ class TaskFlowAppStack(Stack):
             self, "TaskFlowApiAuthorizer", cognito_user_pools=[user_pool]
         )
 
-        # Creating a CloudWatch metric for POST method hits
+        # Creating a CloudWatch metric for API Gateway hits
         post_method_metric = cloudwatch.Metric(
             namespace="AWS/ApiGateway",
             metric_name="Count",
             dimensions_map={
                 "ApiName": api.rest_api_name,
-                "Resource": "/task",
-                "Method": "POST",
             },
             period=Duration.minutes(1),
             statistic="Sum",
         )
 
-        # Creating a CloudWatch alarm when POST API is hit more than 5 times in 1 minute
+        # Creating a CloudWatch alarm when API Gateway is hit more than 5 times in 1 minute
         post_api_alarm = cloudwatch.Alarm(
             self,
             "PostApiHitsAlarm",
@@ -203,7 +211,9 @@ class TaskFlowAppStack(Stack):
             datapoints_to_alarm=1,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             alarm_description="Alarm when POST /task API is hit more than 5 times in one minute",
+            actions_enabled=True,
         )
+        post_api_alarm.add_alarm_action(cloudwatch_actions.SnsAction(alarm_topic))
 
         # Creating a CloudWatch metric for POST request payload size
         payload_size_metric = cloudwatch.Metric(
@@ -213,6 +223,7 @@ class TaskFlowAppStack(Stack):
                 "ApiName": api.rest_api_name,
                 "Resource": "/task",
                 "Method": "POST",
+                "Stage": "prod",
             },
             period=Duration.minutes(1),
             statistic="Max",
@@ -228,7 +239,9 @@ class TaskFlowAppStack(Stack):
             datapoints_to_alarm=1,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             alarm_description="Alarm when POST /task API payload size exceeds 5 MB",
+            actions_enabled=True,
         )
+        payload_size_alarm.add_alarm_action(cloudwatch_actions.SnsAction(alarm_topic))
 
         # Integrating Lambda with API Gateway
         task_resource = api.root.add_resource("task")

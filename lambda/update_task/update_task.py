@@ -26,6 +26,9 @@ def lambda_handler(event, context):
         user_id = claims["sub"]
         print(f"User ID (sub): {user_id}")
 
+        email = claims.get("email", "No email found")
+        print(f"User email: {email}")
+
         body = event["body"]
         if event.get("isBase64Encoded", False):
             body = base64.b64decode(body)
@@ -64,6 +67,9 @@ def lambda_handler(event, context):
             task_id, title, description, status, attachment
         )
         print("Task updated:", updated_task)
+
+        # Sending email notification
+        send_email(updated_task, task_id, email)
 
         return {
             "statusCode": 200,
@@ -195,3 +201,35 @@ def upload_attachment(multipart_data=None):
     except (KeyError, json.JSONDecodeError) as e:
         print("error", e)
         raise Exception(f"Invalid request body: {e}")
+
+
+def send_email(task, task_id, recipient_email):
+    print(f"Sending email from {SES_EMAIL_SENDER} to {recipient_email}")
+    try:
+        response = ses.send_email(
+            Source=SES_EMAIL_SENDER,
+            Destination={
+                "ToAddresses": [recipient_email],
+            },
+            Message={
+                "Subject": {"Data": "Task Updated Successfully", "Charset": "UTF-8"},
+                "Body": {
+                    "Text": {
+                        "Data": (
+                            f"Hello,\n\n"
+                            f"Your task has been updated successfully with the following details:\n"
+                            f"Title: {task['title']}\n"
+                            f"Task ID: {task_id}\n\n"
+                            f"Please check the latest updates on your task.\n\n"
+                            f"Best regards,\n"
+                            f"Taskflow Team"
+                        ),
+                        "Charset": "UTF-8",
+                    }
+                },
+            },
+        )
+        print(f"Email sent! Message ID: {response['MessageId']}")
+    except Exception as e:
+        print(f"Failed to send email notification: {e}")
+        raise Exception(f"Failed to send email notification: {e}")
