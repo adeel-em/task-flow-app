@@ -26,6 +26,8 @@ class TaskFlowAppStack(Stack):
 
         load_dotenv()
         SES_EMAIL_SENDER = os.getenv("SES_EMAIL_SENDER")
+        CALLBACK_URL = os.getenv("CALLBACK_URL")
+        LOGOUT_URL = os.getenv("LOGOUT_URL")
 
         # Creating SNS Topic
         alarm_topic = sns.Topic(
@@ -109,8 +111,8 @@ class TaskFlowAppStack(Stack):
                     implicit_code_grant=True,
                 ),
                 scopes=[cognito.OAuthScope.OPENID],
-                callback_urls=["https://task-flow-61851.web.app"],
-                logout_urls=["https://task-flow-61851.web.app/signed-out"],
+                callback_urls=[CALLBACK_URL],
+                logout_urls=[LOGOUT_URL],
             ),
         )
 
