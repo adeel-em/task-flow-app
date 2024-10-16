@@ -53,3 +53,9 @@ cdk bootstrap
 ```
 cdk deploy
 ```
+
+### Signin or Signup link
+
+```
+https://taskflow-app.auth.us-east-1.amazoncognito.com/login?client_id=6hju7vt8r9saca84bftf2pt6tj&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Ftask-flow-61851.web.app
+```
